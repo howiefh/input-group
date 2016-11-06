@@ -1,0 +1,68 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <!-- Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="http://cdn.bootcss.com/bootstrap/3.3.0/css/bootstrap.min.css">
+
+    <!-- 可选的Bootstrap主题文件（一般不用引入） -->
+    <link rel="stylesheet" href="http://cdn.bootcss.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
+
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script src="http://cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="http://cdn.bootcss.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="boxes.css">
+    <script src="inputGroup.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            var groupRules = [{
+                label: '名称',
+                inputName: 'name',
+                attributes: 'required'
+            },{
+                label: '编码',
+                inputName: 'code',
+                attributes: 'required'
+            },{
+                label: '模块',
+                inputName: 'module',
+                attributes: 'required',
+                type: 'select',
+                data: [{key: 'config', value: '配置'}, {key: 'user', value: '用户'}],
+                events:[{
+                    event: 'change',
+                    handler: function(event) {
+                        var text = $(this).find("option:selected").text();
+                        $(this).parent().siblings('.moduleName').val(text);
+                    }
+                }]
+            },{
+                inputName: 'moduleName',
+                attributes: 'required',
+                isHidden: true
+            },{
+                label: '说明',
+                inputName: 'desc',
+                attributes: 'required'
+            }];
+            var inputGroup = $('#inputGroup').inputGroup({
+                header: '配置',
+                groupRules: groupRules,
+                initValues: [{name:'开关',code:'switch',module:'config',moduleName:'配置',desc:'无'}]
+            });
+
+            $('#click').on('click', function () {
+                var val = inputGroup.getInputValues();
+                alert(JSON.stringify(val))
+            });
+
+        });
+
+    </script>
+</head>
+<body>
+    <div id="inputGroup"></div>
+    <span class="btn btn-primary" id="click">获取JSON数据</span>
+</body>
+</html>

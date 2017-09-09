@@ -2,6 +2,8 @@
 
 简单实现了一组输入框动态增减，配合[jQuery Validation Plugin](https://jqueryvalidation.org/)可以很方便的实现校验。
 
+[demo](https://howiefh.github.io/input-group/demo.html)
+
 ## 配置和使用
 
 ```

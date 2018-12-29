@@ -72,7 +72,7 @@
     function render(self, values) {
         var opts = self.opts;
         if ($.isArray(opts.groupRules) && opts.groupRules.length > 0) {
-            var box = $('<div class="bs-boxes"></div>');
+            var box = $('<div class="bs-boxes" data-index="' + self.index + '"></div>');
 
             for (var i = 0; i < opts.groupRules.length; i+=2) {
                 var formGroup = $(opts.domFormGroupWrap);
@@ -100,7 +100,7 @@
                     //添加input
                     var inputEle;
                     if (typeof rule.isHidden != 'undefined' && rule.isHidden) {//需要隐藏，跳过当前元素
-                        inputEle = $('<input class="'  + rule.inputName + '" id="' + inputId + '" name="' + inputName + '" type="text" placeholder="' + rule.label + '" value="' + value + '" hidden>');
+                        inputEle = $('<input class="'  + rule.inputName + '" id="' + inputId + '" name="' + inputName + '" type="hidden" placeholder="' + rule.label + '" value="' + value + '" hidden>');
                         formGroup.append(inputEle);
                         i++;
                     } else {
@@ -142,12 +142,15 @@
             deleteBtn.on('click', function() {
                 if (box.siblings('.bs-boxes').length == 0) {
                     box.find('input,select').val('');
+                    self.$element.trigger('ig.clear', box.data('index'));
                 } else {
                     box.remove();
+                    self.$element.trigger('ig.del', box.data('index'));
                 }
             });
             addBtn.on('click', function() {
                 render(self);
+                self.$element.trigger('ig.add', self.index - 1);
             });
             var btnGroup = $('<div class="zero-right-bottom"></div>');
             btnGroup.append(deleteBtn).append(addBtn);
@@ -165,9 +168,11 @@
         if ($.isArray(opts.initValues) && opts.initValues.length > 0) {
             $.each(opts.initValues, function(i, value){
                 render(self, value);
+                self.$element.trigger('ig.add', self.index - 1);
             });
         } else {
             render(self);
+            self.$element.trigger('ig.add', self.index - 1);
         }
     };
 
@@ -226,6 +231,7 @@
         }
         return {
             valid : valid,
+            array: array,
             values : str
         };
     };

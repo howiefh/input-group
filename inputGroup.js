@@ -2,6 +2,7 @@
  * Created by Feng Hao on 2016/9/2.
  */
 
+
 (function($){
     'use strict';
 
@@ -12,6 +13,11 @@
          * default: 0 不做验证
          */
         maxLength: 0,
+        /**
+         * 最多输入组数
+         * default: 0 不做限制
+         */
+        maxGroup: 0,
         domFormWrap: '<div class="form-horizontal"></div>',
         domFormGroupWrap: '<div class="form-group"></div>',
         domInputWrap: '<div class="col-sm-3"></div>',
@@ -55,7 +61,11 @@
             element.attr('id', self.id);
         }
         self.index = 0;
+        self.count = 0;
         self.opts = $.extend(true, {}, defaults, options);
+        if (self.opts.maxGroup < 0) {
+            self.opts.maxGroup = 0;
+        }
         self.form = $(self.opts.domFormWrap);
         self.rules = {};
         element.append(self.form);
@@ -99,7 +109,7 @@
 
                     //添加input
                     var inputEle;
-                    if (typeof rule.isHidden != 'undefined' && rule.isHidden) {//需要隐藏，跳过当前元素
+                    if (typeof rule.isHidden !== 'undefined' && rule.isHidden) {//需要隐藏，跳过当前元素
                         inputEle = $('<input class="'  + rule.inputName + '" id="' + inputId + '" name="' + inputName + '" type="hidden" placeholder="' + rule.label + '" value="' + value + '" hidden>');
                         formGroup.append(inputEle);
                         i++;
@@ -107,7 +117,7 @@
                         //添加label
                         formGroup.append('<label for="' + inputId + '" class="' + opts.domLabel.cssClass + '">' + rule.label + '</label>');
 
-                        if (typeof rule.type == 'string' && rule.type == 'select') {
+                        if (rule.type === 'select') {
                             var option = '<option value="">请选择</option>';
 
                             $.each(rule.data, function(i, item) {
@@ -119,7 +129,14 @@
                             });
                             inputEle = $('<select class="' + opts.domInput.cssClass + ' ' + rule.inputName + '" id="' + inputId + '" name="' + inputName + '" ' + rule.attributes + '>' + option + '</select>');
                         } else {
-                            inputEle = $('<input class="' + opts.domInput.cssClass + ' ' + rule.inputName + '" id="' + inputId + '" name="' + inputName + '" type="text" placeholder="' + rule.label + '" value="' + value + '" ' + rule.attributes + '>');
+                            var type = 'text';
+                            if (rule.type) {
+                                var pair = rule.type.split('-');
+                                if (pair.length === 2) {
+                                    type = pair[1];
+                                }
+                            }
+                            inputEle = $('<input class="' + opts.domInput.cssClass + ' ' + rule.inputName + '" id="' + inputId + '" name="' + inputName + '" type="' + type + '" placeholder="' + rule.label + '" value="' + value + '" ' + rule.attributes + '>');
                         }
 
                         //添加事件
@@ -137,27 +154,36 @@
                 box.append(formGroup);
             }
 
-            var deleteBtn = $('<span class="btn-right-bottom btn-right-bottom-second btn-danger btn-delete">删除</span>');
-            var addBtn = $('<span class="btn-right-bottom btn-right-bottom-first btn-primary btn-add">添加</span>');
-            deleteBtn.on('click', function() {
-                if (box.siblings('.bs-boxes').length == 0) {
-                    box.find('input,select').val('');
-                    self.$element.trigger('ig.clear', box.data('index'));
-                } else {
-                    box.remove();
-                    self.$element.trigger('ig.del', box.data('index'));
-                }
-            });
-            addBtn.on('click', function() {
-                render(self);
-                self.$element.trigger('ig.add', self.index - 1);
-            });
-            var btnGroup = $('<div class="zero-right-bottom"></div>');
-            btnGroup.append(deleteBtn).append(addBtn);
-            box.append(btnGroup);
+            if (self.opts.maxGroup !== 1) {
+                var deleteBtn = $('<span class="btn-right-bottom btn-right-bottom-second btn-danger btn-delete">删除</span>');
+                var addBtn = $('<span class="btn-right-bottom btn-right-bottom-first btn-primary btn-add">添加</span>');
+                deleteBtn.on('click', function() {
+                    if (box.siblings('.bs-boxes').length == 0) {
+                        box.find('input,select').val('');
+                        self.$element.trigger('ig.clear', box.data('index'));
+                    } else {
+                        box.remove();
+                        self.$element.trigger('ig.del', box.data('index'));
+                        self.count--;
+                        deleteBtn.off('click')
+                    }
+                });
+                addBtn.on('click', function() {
+                    if (self.opts.maxGroup === 0 || self.count < self.opts.maxGroup) {
+                        render(self);
+                        self.$element.trigger('ig.add', self.index - 1);
+                    } else {
+                        alert('当前组数已达最大组数: ' + self.opts.maxGroup);
+                    }
+                });
+                var btnGroup = $('<div class="zero-right-bottom"></div>');
+                btnGroup.append(deleteBtn).append(addBtn);
+                box.append(btnGroup);
+            }
 
             self.form.append(box);
             self.index++;
+            self.count++;
         }
     }
 
@@ -165,10 +191,23 @@
     InputGroup.prototype.init = function(){
         var self = this;
         var opts = self.opts;
-        if ($.isArray(opts.initValues) && opts.initValues.length > 0) {
+        if (typeof opts.initValues === 'string') {
+            opts.initValues = JSON.parse(opts.initValues);
+        }
+        var valueIsArray = $.isArray(opts.initValues);
+        if (opts.maxGroup === 1) {
+            var value = opts.initValues;
+            if (valueIsArray) {
+                value = opts.initValues[0] || {};
+            }
+            render(self, value);
+            self.$element.trigger('ig.add', self.index - 1);
+        } else if (valueIsArray && opts.initValues.length > 0) {
             $.each(opts.initValues, function(i, value){
-                render(self, value);
-                self.$element.trigger('ig.add', self.index - 1);
+                if (opts.maxGroup === 0 || i < opts.maxGroup) {
+                    render(self, value);
+                    self.$element.trigger('ig.add', self.index - 1);
+                }
             });
         } else {
             render(self);

@@ -130,14 +130,22 @@
             var option = '<option value="">请选择</option>';
 
             $.each(rule.data, function (i, item) {
-              option += '<option value="' + item.key + '" ';
-              if (value == item.key) {
+              var itemKey, itemValue
+              if (typeof item === 'string') {
+                itemKey = item;
+                itemValue = item;
+              } else {
+                itemKey = item.key;
+                itemValue = item.value;
+              }
+              option += '<option value="' + itemKey + '" ';
+              if (value == itemKey) {
                 option += 'selected';
               }
-              option += '>' + item.value + '</option>';
+              option += '>' + itemValue + '</option>';
             });
             inputEle = $('<select class="' + opts.domInput.cssClass + ' ' + rule.inputName + '" id="' + inputId +
-              '" name="' + inputName + '" ' + rule.attributes + '>' + option + '</select>');
+                '" data-value="' + value +  '" name="' + inputName + '" ' + rule.attributes + '>' + option + '</select>');
           } else {
             var type = 'text';
             if (rule.type) {
@@ -203,31 +211,53 @@
   }
 
   // 初始化
-  InputGroup.prototype.init = function () {
+  InputGroup.prototype.init = function (values) {
     var self = this;
     var opts = self.opts;
-    if (typeof opts.initValues === 'string') {
-      opts.initValues = JSON.parse(opts.initValues);
+    var initValues = values || opts.initValues;
+    if (typeof initValues === 'string') {
+      initValues = JSON.parse(initValues);
     }
-    var valueIsArray = $.isArray(opts.initValues);
+    var valueIsArray = $.isArray(initValues);
     if (opts.maxGroup === 1) {
-      var value = opts.initValues;
+      var value = initValues;
       if (valueIsArray) {
-        value = opts.initValues[0] || {};
+        value = initValues[0] || {};
       }
       render(self, null, value);
       self.$element.trigger('ig.add', self.index - 1);
-    } else if (valueIsArray && opts.initValues.length > 0) {
-      $.each(opts.initValues, function (i, value) {
+      self.$element.trigger('ig.init', self.index - 1);
+      self.$element.trigger('ig.initValue', self.index - 1);
+    } else if (valueIsArray && initValues.length > 0) {
+      $.each(initValues, function (i, value) {
         if (opts.maxGroup === 0 || i < opts.maxGroup) {
           render(self, null, value);
           self.$element.trigger('ig.add', self.index - 1);
+          self.$element.trigger('ig.init', self.index - 1);
+          self.$element.trigger('ig.initValue', self.index - 1);
         }
       });
     } else {
       render(self);
       self.$element.trigger('ig.add', self.index - 1);
+      self.$element.trigger('ig.init', self.index - 1);
     }
+  };
+
+  InputGroup.prototype.setInputValues = function (values) {
+    this.clear();
+    this.init(values);
+  };
+
+  InputGroup.prototype.clear = function () {
+    var self = this;
+    var element = self.$element;
+    self.rules = {}
+    self.count = 0;
+    self.index = 0;
+    element.find('.bs-boxes').each(function () {
+      $(this).remove()
+    });
   };
 
   InputGroup.prototype.getInputValues = function () {
